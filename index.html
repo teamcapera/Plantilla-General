@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario Ejecutivo de Ventas - SIIGO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
+    .container { max-width: 900px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);}
+    h2 { text-align: center; color: #0056b3; margin-bottom: 20px;}
+    label { font-weight: bold; display: block; margin-top: 15px; color: #333;}
+    input, textarea { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;}
+    textarea { resize: vertical; min-height: 80px;}
+    button { margin-top: 20px; padding: 12px; border: none; border-radius: 8px; background: #0056b3; color: white; font-size: 16px; cursor: pointer;}
+    button:hover { background: #00408f;}
+    .resultado { margin-top: 30px; padding: 20px; background: #f0f4f9; border-radius: 8px; border: 1px solid #ccc;}
+    .footer { text-align: center; margin-top: 25px; font-size: 12px; color: #666;}
+    pre { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; overflow-x: auto; }
+    .copy-btn { background: #28a745; margin-top: 10px; }
+    .copy-btn:hover { background: #1e7e34; }
+    .excel-btn { background: #ff9800; margin-top: 10px; }
+    .excel-btn:hover { background: #e68900; }
+    .clear-btn { background: #dc3545; margin-top: 10px; }
+    .clear-btn:hover { background: #a71d2a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
+    th { background: #0056b3; color: #fff; }
+    tr:nth-child(even) { background: #f9f9f9; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Formulario Ejecutivo de Ventas - SIIGO</h2>
+    <form id="ventasForm">
+      
+      <label>A qué se dedica la empresa:</label>
+      <input type="text" id="actividad_empresa">
+
+      <label>Nombre del contacto:</label>
+      <input type="text" id="nombre_contacto">
+
+      <label>Rol en la empresa:</label>
+      <input type="text" id="rol_contacto">
+
+      <label>¿Cómo trabajas hoy en día la contabilidad?</label>
+      <textarea id="contabilidad"></textarea>
+
+      <label>¿Qué necesidad tienes?</label>
+      <textarea id="necesidad"></textarea>
+
+      <label>Producto cotizado:</label>
+      <input type="text" id="producto">
+
+      <label>¿De qué depende la compra?</label>
+      <textarea id="decision_compra"></textarea>
+
+      <label>No olvides solicitar referidos:</label>
+      <input type="text" id="referidos">
+
+      <label>Observaciones o comentarios adicionales (opcional):</label>
+      <textarea id="observaciones"></textarea>
+
+      <button type="button" onclick="generarPlantilla()">Guardar Información</button>
+    </form>
+
+    <div id="resultado" class="resultado" style="display:none;">
+      <h3>📋 Plantilla lista para CRM:</h3>
+      <pre id="plantilla"></pre>
+      <button class="copy-btn" onclick="copiarPlantilla()">📋 Copiar al portapapeles</button>
+      <h3>💡 Recomendación SIIGO:</h3>
+      <p id="recomendacion"></p>
+    </div>
+
+    <h3 style="margin-top:40px;">📊 Histórico de Clientes</h3>
+    <table id="tablaClientes">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Empresa</th>
+          <th>Rol</th>
+          <th>Necesidad</th>
+          <th>Producto cotizado</th>
+          <th>Recomendación SIIGO</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button class="excel-btn" onclick="exportarExcel()">📥 Exportar a Excel</button>
+    <button class="clear-btn" onclick="limpiarHistorico()">🗑️ Limpiar Histórico</button>
+
+    <div class="footer">
+      Creado para uso de Ejecutivos de Ventas - SIIGO
+    </div>
+  </div>
+
+  <script>
+    let historicoClientes = [];
+
+    // Cargar histórico al inicio
+    window.onload = function() {
+      let dataGuardada = localStorage.getItem("historicoClientes");
+      if (dataGuardada) {
+        historicoClientes = JSON.parse(dataGuardada);
+        mostrarTabla();
+      }
+    };
+
+    function generarPlantilla() {
+      let actividad = document.getElementById("actividad_empresa").value;
+      let nombre = document.getElementById("nombre_contacto").value;
+      let rol = document.getElementById("rol_contacto").value;
+      let contabilidad = document.getElementById("contabilidad").value;
+      let necesidad = document.getElementById("necesidad").value.toLowerCase();
+      let producto = document.getElementById("producto").value;
+      let decision = document.getElementById("decision_compra").value;
+      let referidos = document.getElementById("referidos").value;
+      let observaciones = document.getElementById("observaciones").value;
+
+      let texto = 
+`A qué se dedica la empresa: ${actividad}
+Nombre del contacto: ${nombre}
+Rol en la empresa: ${rol}
+¿Cómo trabajas hoy en día la contabilidad?: ${contabilidad}
+¿Qué necesidad tienes?: ${necesidad}
+Producto cotizado: ${producto}
+¿De qué depende la compra?: ${decision}
+Referidos: ${referidos}
+Observaciones: ${observaciones}`;
+
+      document.getElementById("plantilla").innerText = texto;
+
+      let recomendacion = "👉 Según la necesidad, recomiendo ";
+      if (necesidad.includes("nómina") || necesidad.includes("empleados")) {
+        recomendacion += "📌 SIIGO Nómina.";
+      } else if (rol.toLowerCase().includes("contador")) {
+        recomendacion += "📌 SIIGO Contador.";
+      } else if (necesidad.includes("todo") || necesidad.includes("integral") || necesidad.includes("erp") || necesidad.includes("inventario")) {
+        recomendacion += "📌 SIIGO Integral (ERP).";
+      } else {
+        recomendacion += "📌 SIIGO Pyme/Emprendedor.";
+      }
+
+      document.getElementById("recomendacion").innerText = recomendacion;
+      document.getElementById("resultado").style.display = "block";
+
+      let registro = {
+        Nombre: nombre,
+        Empresa: actividad,
+        Rol: rol,
+        Necesidad: necesidad,
+        Producto: producto,
+        Recomendacion: recomendacion.replace("👉 Según la necesidad, recomiendo ","")
+      };
+
+      historicoClientes.push(registro);
+      localStorage.setItem("historicoClientes", JSON.stringify(historicoClientes));
+
+      mostrarTabla();
+    }
+
+    function mostrarTabla() {
+      let tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
+      tabla.innerHTML = "";
+      historicoClientes.forEach(registro => {
+        let fila = tabla.insertRow();
+        fila.insertCell(0).innerText = registro.Nombre;
+        fila.insertCell(1).innerText = registro.Empresa;
+        fila.insertCell(2).innerText = registro.Rol;
+        fila.insertCell(3).innerText = registro.Necesidad;
+        fila.insertCell(4).innerText = registro.Producto;
+        fila.insertCell(5).innerText = registro.Recomendacion;
+      });
+    }
+
+    function copiarPlantilla() {
+      let texto = document.getElementById("plantilla").innerText;
+      navigator.clipboard.writeText(texto).then(() => {
+        alert("✅ Plantilla copiada al portapapeles. Ahora pégala en tu CRM.");
+      });
+    }
+
+    function exportarExcel() {
+      let ws = XLSX.utils.json_to_sheet(historicoClientes);
+      let wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+      XLSX.writeFile(wb, "Historico_Clientes_SIIGO.xlsx");
+    }
+
+    function limpiarHistorico() {
+      if (confirm("⚠️ ¿Seguro que quieres borrar todo el histórico?")) {
+        historicoClientes = [];
+        localStorage.removeItem("historicoClientes");
+        mostrarTabla();
+      }
+    }
+  </script>
+
+</body>
+</html>
