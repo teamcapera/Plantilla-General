@@ -20,7 +20,12 @@
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
     th { background: #0056b3; color: #fff; }
     tr:nth-child(even) { background: #f9f9f9; }
-    .filtro { margin-top: 20px; padding: 10px; background: #eef3fa; border-radius: 8px; }
+    .filtro { margin-top: 20px; padding: 10px; background: #eef3fa; border-radius: 8px; display: flex; gap: 10px; align-items: center; }
+    .filtro input { flex: 1; }
+    .clear-btn { background: #dc3545; }
+    .clear-btn:hover { background: #a71d2a; }
+    .ver-mas { background: #007bff; margin-top: 15px; }
+    .ver-mas:hover { background: #0056b3; }
   </style>
 </head>
 <body>
@@ -66,8 +71,9 @@
     </form>
 
     <div class="filtro">
-      <label>🔍 Buscar por cédula de vendedor:</label>
-      <input type="text" id="buscarCedula" placeholder="Escribe la cédula del vendedor..." oninput="filtrarPorCedula()">
+      <label style="margin:0;">🔍 Buscar por cédula de vendedor:</label>
+      <input type="text" id="buscarCedula" placeholder="Escribe la cédula..." oninput="filtrarPorCedula()">
+      <button class="clear-btn" onclick="limpiarFiltro()">Limpiar</button>
     </div>
 
     <h3 style="margin-top:20px;">📊 Histórico de Clientes</h3>
@@ -89,6 +95,7 @@
       <tbody></tbody>
     </table>
 
+    <button class="ver-mas" id="btnVerMas" onclick="verMas()">Ver más clientes</button>
     <button onclick="exportarExcel()">📥 Exportar a Excel</button>
 
     <div class="footer">Creado para uso de Ejecutivos de Ventas - SIIGO</div>
@@ -112,6 +119,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     let historicoClientes = [];
+    let clientesMostrados = 10; // límite inicial
 
     // Escucha en tiempo real
     onSnapshot(collection(db, "clientes"), (snapshot) => {
@@ -121,7 +129,7 @@
         data.id = docSnap.id;
         historicoClientes.push(data);
       });
-      mostrarTabla(historicoClientes);
+      aplicarFiltroInicial();
       revisarSeguimientos();
     });
 
@@ -134,6 +142,7 @@
     window.guardarCedula = function() {
       let cedula = document.getElementById("cedula_vendedor").value;
       localStorage.setItem("cedulaVendedor", cedula);
+      aplicarFiltroInicial(); // actualizar automáticamente el filtro
     };
 
     // Guardar información
@@ -177,11 +186,13 @@
       }
     };
 
-    // Mostrar tabla
+    // Mostrar tabla con paginación
     function mostrarTabla(datos) {
       const tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
       tabla.innerHTML = "";
-      datos.forEach((r) => {
+
+      const datosMostrados = datos.slice(0, clientesMostrados);
+      datosMostrados.forEach((r) => {
         const fila = tabla.insertRow();
         fila.insertCell(0).innerText = r.Cedula;
         fila.insertCell(1).innerText = r.Nombre;
@@ -210,17 +221,45 @@
         });
         celdaEstado.appendChild(selectEstado);
       });
+
+      const btnVerMas = document.getElementById("btnVerMas");
+      if (clientesMostrados >= datos.length) btnVerMas.style.display = "none";
+      else btnVerMas.style.display = "block";
     }
 
-    // Filtro por cédula
+    window.verMas = function() {
+      clientesMostrados += 10;
+      filtrarPorCedula();
+    };
+
+    // Filtro automático por cédula guardada
+    function aplicarFiltroInicial() {
+      const cedulaGuardada = localStorage.getItem("cedulaVendedor");
+      if (cedulaGuardada) {
+        document.getElementById("buscarCedula").value = cedulaGuardada;
+        filtrarPorCedula();
+      } else {
+        mostrarTabla(historicoClientes);
+      }
+    }
+
+    // Filtro manual
     window.filtrarPorCedula = function() {
       const filtro = document.getElementById("buscarCedula").value.trim();
+      clientesMostrados = 10;
       if (filtro === "") {
         mostrarTabla(historicoClientes);
       } else {
         const filtrados = historicoClientes.filter(c => c.Cedula && c.Cedula.includes(filtro));
         mostrarTabla(filtrados);
       }
+    };
+
+    // Limpiar filtro
+    window.limpiarFiltro = function() {
+      document.getElementById("buscarCedula").value = "";
+      clientesMostrados = 10;
+      mostrarTabla(historicoClientes);
     };
 
     // Revisar seguimientos
