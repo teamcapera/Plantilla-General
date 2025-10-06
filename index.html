@@ -36,6 +36,10 @@
   <div class="container">
     <h2>Formulario Ejecutivo de Ventas - SIIGO</h2>
     <form id="ventasForm">
+
+      <label>🧾 Cédula del vendedor:</label>
+      <input type="text" id="cedula_vendedor" placeholder="Ej: 1234567890" oninput="guardarCedula()">
+
       <label>A qué se dedica la empresa:</label>
       <input type="text" id="actividad_empresa">
 
@@ -81,6 +85,7 @@
     <table id="tablaClientes">
       <thead>
         <tr>
+          <th>Cédula</th>
           <th>Nombre</th>
           <th>Empresa</th>
           <th>Rol</th>
@@ -110,9 +115,20 @@
         mostrarTabla();
         revisarSeguimientos();
       }
+
+      let cedulaGuardada = localStorage.getItem("cedulaVendedor");
+      if (cedulaGuardada) {
+        document.getElementById("cedula_vendedor").value = cedulaGuardada;
+      }
     };
 
+    function guardarCedula() {
+      let cedula = document.getElementById("cedula_vendedor").value;
+      localStorage.setItem("cedulaVendedor", cedula);
+    }
+
     function generarPlantilla() {
+      let cedula = document.getElementById("cedula_vendedor").value;
       let actividad = document.getElementById("actividad_empresa").value;
       let nombre = document.getElementById("nombre_contacto").value;
       let rol = document.getElementById("rol_contacto").value;
@@ -126,7 +142,8 @@
       let fechaGuardado = new Date().toLocaleString();
 
       let texto = 
-`A qué se dedica la empresa: ${actividad}
+`🧾 Cédula del vendedor: ${cedula}
+A qué se dedica la empresa: ${actividad}
 Nombre del contacto: ${nombre}
 Rol en la empresa: ${rol}
 ¿Cómo trabajas hoy en día la contabilidad?: ${contabilidad}
@@ -155,6 +172,7 @@ Observaciones: ${observaciones}
       document.getElementById("resultado").style.display = "block";
 
       let registro = {
+        Cedula: cedula,
         Nombre: nombre,
         Empresa: actividad,
         Rol: rol,
@@ -177,15 +195,16 @@ Observaciones: ${observaciones}
       tabla.innerHTML = "";
       historicoClientes.forEach((registro, index) => {
         let fila = tabla.insertRow();
-        fila.insertCell(0).innerText = registro.Nombre;
-        fila.insertCell(1).innerText = registro.Empresa;
-        fila.insertCell(2).innerText = registro.Rol;
-        fila.insertCell(3).innerText = registro.Necesidad;
-        fila.insertCell(4).innerText = registro.Producto;
-        fila.insertCell(5).innerText = registro.Recomendacion;
-        fila.insertCell(6).innerText = registro.FechaGuardado;
-        fila.insertCell(7).innerText = registro.FechaSeguimiento;
-        let cellEstado = fila.insertCell(8);
+        fila.insertCell(0).innerText = registro.Cedula;
+        fila.insertCell(1).innerText = registro.Nombre;
+        fila.insertCell(2).innerText = registro.Empresa;
+        fila.insertCell(3).innerText = registro.Rol;
+        fila.insertCell(4).innerText = registro.Necesidad;
+        fila.insertCell(5).innerText = registro.Producto;
+        fila.insertCell(6).innerText = registro.Recomendacion;
+        fila.insertCell(7).innerText = registro.FechaGuardado;
+        fila.insertCell(8).innerText = registro.FechaSeguimiento;
+        let cellEstado = fila.insertCell(9);
         if (registro.Estado === "Pendiente" && registro.FechaSeguimiento) {
           let btn = document.createElement("button");
           btn.innerText = "✅ Confirmar";
