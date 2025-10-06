@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formulario Ejecutivo de Ventas - SIIGO</title>
+  <title>Seguimiento de Ventas - SIIGO</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
     .container { max-width: 1000px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);}
@@ -18,12 +19,12 @@
     .footer { text-align: center; margin-top: 25px; font-size: 12px; color: #666;}
     pre { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; overflow-x: auto; }
     .copy-btn { background: #28a745; }
-    .copy-btn:hover { background: #1e7e34; }
     .excel-btn { background: #ff9800; }
-    .excel-btn:hover { background: #e68900; }
     .clear-btn { background: #dc3545; }
-    .clear-btn:hover { background: #a71d2a; }
     .done-btn { background: #28a745; }
+    .copy-btn:hover { background: #1e7e34; }
+    .excel-btn:hover { background: #e68900; }
+    .clear-btn:hover { background: #a71d2a; }
     .done-btn:hover { background: #1c7c31; }
     table { width: 100%; border-collapse: collapse; margin-top: 25px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
@@ -35,8 +36,8 @@
 
   <div class="container">
     <h2>Formulario Ejecutivo de Ventas - SIIGO</h2>
-    <form id="ventasForm">
 
+    <form id="ventasForm">
       <label>🧾 Cédula del vendedor:</label>
       <input type="text" id="cedula_vendedor" placeholder="Ej: 1234567890" oninput="guardarCedula()">
 
@@ -70,16 +71,8 @@
       <label>📅 Fecha de seguimiento:</label>
       <input type="date" id="fecha_seguimiento">
 
-      <button type="button" onclick="generarPlantilla()">Guardar Información</button>
+      <button type="button" onclick="guardarInformacion()">Guardar Información</button>
     </form>
-
-    <div id="resultado" class="resultado" style="display:none;">
-      <h3>📋 Plantilla lista para CRM:</h3>
-      <pre id="plantilla"></pre>
-      <button class="copy-btn" onclick="copiarPlantilla()">📋 Copiar al portapapeles</button>
-      <h3>💡 Recomendación SIIGO:</h3>
-      <p id="recomendacion"></p>
-    </div>
 
     <h3 style="margin-top:40px;">📊 Histórico de Clientes</h3>
     <table id="tablaClientes">
@@ -92,139 +85,137 @@
           <th>Necesidad</th>
           <th>Producto</th>
           <th>Recomendación</th>
-          <th>📌 Fecha guardado</th>
-          <th>📅 Seguimiento</th>
+          <th>Fecha guardado</th>
+          <th>Seguimiento</th>
           <th>Estado</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
+
     <button class="excel-btn" onclick="exportarExcel()">📥 Exportar a Excel</button>
     <button class="clear-btn" onclick="limpiarHistorico()">🗑️ Limpiar Histórico</button>
 
     <div class="footer">Creado para uso de Ejecutivos de Ventas - SIIGO</div>
   </div>
 
-  <script>
-    let historicoClientes = [];
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
 
-    window.onload = function() {
-      let dataGuardada = localStorage.getItem("historicoClientes");
-      if (dataGuardada) {
-        historicoClientes = JSON.parse(dataGuardada);
-        mostrarTabla();
-        revisarSeguimientos();
-      }
-
-      let cedulaGuardada = localStorage.getItem("cedulaVendedor");
-      if (cedulaGuardada) {
-        document.getElementById("cedula_vendedor").value = cedulaGuardada;
-      }
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0GaKJKOIIc6UNo9IFMNCX-uNn3wqNHHk",
+      authDomain: "seguimiento-ventas-a415c.firebaseapp.com",
+      projectId: "seguimiento-ventas-a415c",
+      storageBucket: "seguimiento-ventas-a415c.firebasestorage.app",
+      messagingSenderId: "57921371203",
+      appId: "1:57921371203:web:41ea8a91f52b18c59ca8f6",
+      measurementId: "G-D0TBJ88NN6"
     };
 
-    function guardarCedula() {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let historicoClientes = [];
+
+    // 🔹 Escucha en tiempo real de Firestore
+    onSnapshot(collection(db, "clientes"), (snapshot) => {
+      historicoClientes = [];
+      snapshot.forEach(docSnap => {
+        let data = docSnap.data();
+        data.id = docSnap.id;
+        historicoClientes.push(data);
+      });
+      mostrarTabla();
+      revisarSeguimientos();
+    });
+
+    // 🔹 Guardar cedula localmente
+    window.onload = function() {
+      let cedulaGuardada = localStorage.getItem("cedulaVendedor");
+      if (cedulaGuardada) document.getElementById("cedula_vendedor").value = cedulaGuardada;
+    };
+
+    window.guardarCedula = function() {
       let cedula = document.getElementById("cedula_vendedor").value;
       localStorage.setItem("cedulaVendedor", cedula);
-    }
+    };
 
-    function generarPlantilla() {
-      let cedula = document.getElementById("cedula_vendedor").value;
-      let actividad = document.getElementById("actividad_empresa").value;
-      let nombre = document.getElementById("nombre_contacto").value;
-      let rol = document.getElementById("rol_contacto").value;
-      let contabilidad = document.getElementById("contabilidad").value;
-      let necesidad = document.getElementById("necesidad").value.toLowerCase();
-      let producto = document.getElementById("producto").value;
-      let decision = document.getElementById("decision_compra").value;
-      let referidos = document.getElementById("referidos").value;
-      let observaciones = document.getElementById("observaciones").value;
-      let fechaSeguimiento = document.getElementById("fecha_seguimiento").value;
-      let fechaGuardado = new Date().toLocaleString();
+    // 🔹 Guardar información en Firestore
+    window.guardarInformacion = async function() {
+      const cedula = document.getElementById("cedula_vendedor").value;
+      const actividad = document.getElementById("actividad_empresa").value;
+      const nombre = document.getElementById("nombre_contacto").value;
+      const rol = document.getElementById("rol_contacto").value;
+      const contabilidad = document.getElementById("contabilidad").value;
+      const necesidad = document.getElementById("necesidad").value.toLowerCase();
+      const producto = document.getElementById("producto").value;
+      const decision = document.getElementById("decision_compra").value;
+      const referidos = document.getElementById("referidos").value;
+      const observaciones = document.getElementById("observaciones").value;
+      const fechaSeguimiento = document.getElementById("fecha_seguimiento").value;
+      const fechaGuardado = new Date().toLocaleString();
 
-      let texto = 
-`🧾 Cédula del vendedor: ${cedula}
-A qué se dedica la empresa: ${actividad}
-Nombre del contacto: ${nombre}
-Rol en la empresa: ${rol}
-¿Cómo trabajas hoy en día la contabilidad?: ${contabilidad}
-¿Qué necesidad tienes?: ${necesidad}
-Producto cotizado: ${producto}
-¿De qué depende la compra?: ${decision}
-Referidos: ${referidos}
-Observaciones: ${observaciones}
-📌 Fecha de guardado: ${fechaGuardado}
-📅 Seguimiento: ${fechaSeguimiento}`;
+      let recomendacion = "SIIGO Pyme/Emprendedor";
+      if (necesidad.includes("nómina") || necesidad.includes("empleados")) recomendacion = "SIIGO Nómina";
+      else if (rol.toLowerCase().includes("contador")) recomendacion = "SIIGO Contador";
+      else if (necesidad.includes("todo") || necesidad.includes("integral") || necesidad.includes("erp") || necesidad.includes("inventario")) recomendacion = "SIIGO Integral (ERP)";
 
-      document.getElementById("plantilla").innerText = texto;
-
-      let recomendacion = "👉 Según la necesidad, recomiendo ";
-      if (necesidad.includes("nómina") || necesidad.includes("empleados")) {
-        recomendacion += "📌 SIIGO Nómina.";
-      } else if (rol.toLowerCase().includes("contador")) {
-        recomendacion += "📌 SIIGO Contador.";
-      } else if (necesidad.includes("todo") || necesidad.includes("integral") || necesidad.includes("erp") || necesidad.includes("inventario")) {
-        recomendacion += "📌 SIIGO Integral (ERP).";
-      } else {
-        recomendacion += "📌 SIIGO Pyme/Emprendedor.";
-      }
-
-      document.getElementById("recomendacion").innerText = recomendacion;
-      document.getElementById("resultado").style.display = "block";
-
-      let registro = {
+      const registro = {
         Cedula: cedula,
         Nombre: nombre,
         Empresa: actividad,
         Rol: rol,
         Necesidad: necesidad,
         Producto: producto,
-        Recomendacion: recomendacion.replace("👉 Según la necesidad, recomiendo ",""),
+        Recomendacion: recomendacion,
         FechaGuardado: fechaGuardado,
         FechaSeguimiento: fechaSeguimiento,
         Estado: "Pendiente"
       };
 
-      historicoClientes.push(registro);
-      localStorage.setItem("historicoClientes", JSON.stringify(historicoClientes));
-      mostrarTabla();
-      revisarSeguimientos();
-    }
+      try {
+        await addDoc(collection(db, "clientes"), registro);
+        alert("✅ Información guardada correctamente en la nube");
+      } catch (err) {
+        alert("❌ Error al guardar: " + err.message);
+      }
+    };
 
+    // 🔹 Mostrar tabla
     function mostrarTabla() {
-      let tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
+      const tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
       tabla.innerHTML = "";
-      historicoClientes.forEach((registro, index) => {
-        let fila = tabla.insertRow();
-        fila.insertCell(0).innerText = registro.Cedula;
-        fila.insertCell(1).innerText = registro.Nombre;
-        fila.insertCell(2).innerText = registro.Empresa;
-        fila.insertCell(3).innerText = registro.Rol;
-        fila.insertCell(4).innerText = registro.Necesidad;
-        fila.insertCell(5).innerText = registro.Producto;
-        fila.insertCell(6).innerText = registro.Recomendacion;
-        fila.insertCell(7).innerText = registro.FechaGuardado;
-        fila.insertCell(8).innerText = registro.FechaSeguimiento;
-        let cellEstado = fila.insertCell(9);
-        if (registro.Estado === "Pendiente" && registro.FechaSeguimiento) {
-          let btn = document.createElement("button");
+      historicoClientes.forEach((r) => {
+        const fila = tabla.insertRow();
+        fila.insertCell(0).innerText = r.Cedula;
+        fila.insertCell(1).innerText = r.Nombre;
+        fila.insertCell(2).innerText = r.Empresa;
+        fila.insertCell(3).innerText = r.Rol;
+        fila.insertCell(4).innerText = r.Necesidad;
+        fila.insertCell(5).innerText = r.Producto;
+        fila.insertCell(6).innerText = r.Recomendacion;
+        fila.insertCell(7).innerText = r.FechaGuardado;
+        fila.insertCell(8).innerText = r.FechaSeguimiento;
+        const celdaEstado = fila.insertCell(9);
+        if (r.Estado === "Pendiente" && r.FechaSeguimiento) {
+          const btn = document.createElement("button");
           btn.innerText = "✅ Confirmar";
           btn.classList.add("done-btn");
-          btn.onclick = () => marcarHecho(index);
-          cellEstado.appendChild(btn);
+          btn.onclick = async () => {
+            await updateDoc(doc(db, "clientes", r.id), { Estado: "Hecho" });
+          };
+          celdaEstado.appendChild(btn);
         } else {
-          cellEstado.innerText = "✔ Hecho";
+          celdaEstado.innerText = "✔ Hecho";
         }
       });
     }
 
-    function marcarHecho(index) {
-      historicoClientes[index].Estado = "Hecho";
-      localStorage.setItem("historicoClientes", JSON.stringify(historicoClientes));
-      mostrarTabla();
-    }
-
+    // 🔹 Revisar seguimientos vencidos
     function revisarSeguimientos() {
-      let hoy = new Date().toISOString().split("T")[0];
+      const hoy = new Date().toISOString().split("T")[0];
       historicoClientes.forEach(c => {
         if (c.Estado === "Pendiente" && c.FechaSeguimiento && c.FechaSeguimiento <= hoy) {
           alert("⚠️ Seguimiento pendiente o vencido: " + c.Nombre + " (" + c.Empresa + ")");
@@ -232,28 +223,18 @@ Observaciones: ${observaciones}
       });
     }
 
-    function copiarPlantilla() {
-      let texto = document.getElementById("plantilla").innerText;
-      navigator.clipboard.writeText(texto).then(() => {
-        alert("✅ Plantilla copiada al portapapeles. Ahora pégala en tu CRM.");
-      });
-    }
-
-    function exportarExcel() {
-      let ws = XLSX.utils.json_to_sheet(historicoClientes);
-      let wb = XLSX.utils.book_new();
+    // 🔹 Exportar a Excel
+    window.exportarExcel = function() {
+      const ws = XLSX.utils.json_to_sheet(historicoClientes);
+      const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Clientes");
       XLSX.writeFile(wb, "Historico_Clientes_SIIGO.xlsx");
-    }
+    };
 
-    function limpiarHistorico() {
-      if (confirm("⚠️ ¿Seguro que quieres borrar todo el histórico?")) {
-        historicoClientes = [];
-        localStorage.removeItem("historicoClientes");
-        mostrarTabla();
-      }
-    }
+    // 🔹 Limpiar tabla local
+    window.limpiarHistorico = function() {
+      alert("Los datos están en la nube y no se eliminan aquí.");
+    };
   </script>
-
 </body>
 </html>
