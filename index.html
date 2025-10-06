@@ -1,50 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Seguimiento de Ventas - SIIGO</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
     body { font-family: Arial, sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
-    .container { max-width: 1000px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);}
-    h2 { text-align: center; color: #0056b3; margin-bottom: 20px;}
-    label { font-weight: bold; display: block; margin-top: 15px; color: #333;}
-    input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;}
-    textarea { resize: vertical; min-height: 80px;}
-    button { margin-top: 10px; padding: 8px 12px; border: none; border-radius: 6px; background: #0056b3; color: white; font-size: 14px; cursor: pointer;}
-    button:hover { background: #00408f;}
-    .footer { text-align: center; margin-top: 25px; font-size: 12px; color: #666;}
-    table { width: 100%; border-collapse: collapse; margin-top: 25px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
-    th { background: #0056b3; color: #fff; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .filtro { margin-top: 20px; padding: 10px; background: #eef3fa; border-radius: 8px; display: flex; gap: 10px; align-items: center; }
-    .filtro input { flex: 1; }
-    .clear-btn { background: #dc3545; }
-    .clear-btn:hover { background: #a71d2a; }
-    .ver-mas { background: #007bff; margin-top: 15px; }
-    .ver-mas:hover { background: #0056b3; }
+    .container { max-width: 1000px; margin: 32px auto; background: #fff; padding: 22px; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.08);}
+    h2 { text-align: center; color: #0056b3; margin-bottom: 12px;}
+    label { font-weight: bold; display:block; margin-top:12px; color:#333; }
+    input[type="text"], input[type="date"], textarea, select {
+      width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:6px; font-size:14px;
+    }
+    textarea { min-height:80px; resize:vertical; }
+    button { margin-top:12px; padding:10px 14px; border:none; border-radius:8px; background:#0056b3; color:#fff; cursor:pointer; }
+    button:hover { background:#00408f; }
+    .filtro { margin-top:18px; padding:10px; background:#eef3fa; border-radius:8px; display:flex; gap:10px; align-items:center; }
+    .filtro input { flex:1; }
+    .clear-btn { background:#dc3545; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; }
+    .clear-btn:hover{ background:#a71d2a; }
+    table { width:100%; border-collapse:collapse; margin-top:18px; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:left; font-size:13px; }
+    th { background:#0056b3; color:#fff; }
+    tr:nth-child(even){ background:#f9f9f9; }
+    .autocomplete-wrap { position: relative; }
+    .suggestions {
+      position:absolute; left:0; right:0; z-index:50; background:#fff; border:1px solid #ccc; border-top:none; max-height:200px; overflow:auto;
+      border-bottom-left-radius:6px; border-bottom-right-radius:6px;
+    }
+    .suggestion-item { padding:8px 10px; cursor:pointer; }
+    .suggestion-item:hover, .suggestion-item.active { background:#f0f4f9; }
+    .small { font-size:12px; color:#666; margin-left:6px; }
+    .ver-mas { background:#007bff; margin-top:12px; padding:10px 14px; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    .ver-mas:hover { background:#0056b3; }
   </style>
 </head>
 <body>
-
   <div class="container">
     <h2>Formulario Ejecutivo de Ventas - SIIGO</h2>
 
-    <form id="ventasForm">
+    <form id="ventasForm" onsubmit="return false;">
       <label>🧾 Cédula del vendedor:</label>
-      <input type="text" id="cedula_vendedor" placeholder="Ej: 1234567890" oninput="guardarCedula()">
+      <input type="text" id="cedula_vendedor" placeholder="Ej: 1234567890" oninput="guardarCedula()" />
 
       <label>A qué se dedica la empresa:</label>
-      <input type="text" id="actividad_empresa">
+      <input type="text" id="actividad_empresa" />
 
       <label>Nombre del contacto:</label>
-      <input type="text" id="nombre_contacto">
+      <input type="text" id="nombre_contacto" />
 
       <label>Rol en la empresa:</label>
-      <input type="text" id="rol_contacto">
+      <input type="text" id="rol_contacto" />
 
       <label>¿Cómo trabajas hoy en día la contabilidad?</label>
       <textarea id="contabilidad"></textarea>
@@ -53,70 +60,40 @@
       <textarea id="necesidad"></textarea>
 
       <label>Producto cotizado:</label>
-      <select id="producto" required>
-        <option value="">Selecciona un producto</option>
-        <option value="Facturación Electrónica 24">Facturación Electrónica 24 Docs</option>
-        <option value="Facturación Electrónica 120">Facturación Electrónica 120 Docs</option>
-        <option value="Facturación Electrónica PRO">Facturación Electrónica PRO (500 Docs)</option>
-        <option value="Facturación Electrónica 1500">Facturación Electrónica 1500 Docs</option>
-        <option value="Facturación Electrónica + WhatsApp 24">Combo FE + WhatsApp 24</option>
-        <option value="Facturación Electrónica + WhatsApp 120">Combo FE + WhatsApp 120</option>
-        <option value="Nómina Electrónica 24">Nómina Electrónica 24</option>
-        <option value="Nómina Electrónica 120">Nómina Electrónica 120</option>
-        <option value="Nómina Electrónica 300">Nómina Electrónica 300</option>
-        <option value="POS Esencial">POS Web Esencial</option>
-        <option value="POS Inicio">POS Web Inicio</option>
-        <option value="Nómina + POS Esencial">Nómina + POS Esencial</option>
-        <option value="Nómina + POS Inicio">Nómina + POS Inicio</option>
-        <option value="FE + NE Combo">Combo Facturación + Nómina Electrónica</option>
-        <option value="FE + NE + POS">Combo Facturación + Nómina + POS</option>
-        <option value="Software Médico">Software Médico</option>
-        <option value="SaludTools">SaludTools</option>
-        <option value="Dentalink">Dentalink</option>
-        <option value="GoClinic">GoClinic</option>
-        <option value="Rindegastos">Rindegastos</option>
-        <option value="Te Auditamos">Te Auditamos</option>
-        <option value="Thot Strategy">Thot Strategy</option>
-        <option value="Mercado Pago">Mercado Pago</option>
-        <option value="EPSON POS">EPSON POS</option>
-        <option value="SAT Store">SAT Store</option>
-      </select>
+      <div class="autocomplete-wrap">
+        <input type="text" id="producto_search" placeholder="Escribe para buscar producto (elige de la lista)" autocomplete="off" />
+        <div id="suggestions" class="suggestions" style="display:none;"></div>
+      </div>
+      <!-- Hidden field that stores the validated product value (must match one of the options) -->
+      <input type="hidden" id="producto" />
 
       <label>¿De qué depende la compra?</label>
       <textarea id="decision_compra"></textarea>
 
       <label>No olvides solicitar referidos:</label>
-      <input type="text" id="referidos">
+      <input type="text" id="referidos" />
 
       <label>Observaciones o comentarios adicionales (opcional):</label>
       <textarea id="observaciones"></textarea>
 
       <label>📅 Fecha de seguimiento:</label>
-      <input type="date" id="fecha_seguimiento">
+      <input type="date" id="fecha_seguimiento" />
 
       <button type="button" onclick="guardarInformacion()">Guardar Información</button>
+      <div class="small">Nota: solo se permite seleccionar productos existentes de la oferta. Si el texto no aparece en la lista, no podrá ser guardado.</div>
     </form>
 
     <div class="filtro">
       <label style="margin:0;">🔍 Buscar por cédula de vendedor:</label>
-      <input type="text" id="buscarCedula" placeholder="Escribe la cédula..." oninput="filtrarPorCedula()">
+      <input type="text" id="buscarCedula" placeholder="Escribe la cédula..." oninput="filtrarPorCedula()" />
       <button class="clear-btn" onclick="limpiarFiltro()">Limpiar</button>
     </div>
 
-    <h3 style="margin-top:20px;">📊 Histórico de Clientes</h3>
+    <h3 style="margin-top:12px;">📊 Histórico de Clientes</h3>
     <table id="tablaClientes">
       <thead>
         <tr>
-          <th>Cédula</th>
-          <th>Nombre</th>
-          <th>Empresa</th>
-          <th>Rol</th>
-          <th>Necesidad</th>
-          <th>Producto</th>
-          <th>Recomendación</th>
-          <th>Fecha guardado</th>
-          <th>Seguimiento</th>
-          <th>Estado</th>
+          <th>Cédula</th><th>Nombre</th><th>Empresa</th><th>Rol</th><th>Necesidad</th><th>Producto</th><th>Recomendación</th><th>Fecha guardado</th><th>Seguimiento</th><th>Estado</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -128,7 +105,7 @@
     <div class="footer">Creado para uso de Ejecutivos de Ventas - SIIGO</div>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase + App logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
@@ -145,6 +122,119 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
+    // PRODUCTS - lista oficial SIIGO (sin alianzas externas)
+    const PRODUCTS = [
+      "Facturación Electrónica 24",
+      "Facturación Electrónica 120",
+      "Facturación Electrónica PRO (500 Docs)",
+      "Facturación Electrónica 1500 Docs",
+      "Combo FE + WhatsApp 24",
+      "Combo FE + WhatsApp 120",
+      "Nómina Electrónica 24",
+      "Nómina Electrónica 120",
+      "Nómina Electrónica 300",
+      "POS Web Esencial",
+      "POS Web Inicio",
+      "Nómina + POS Esencial",
+      "Nómina + POS Inicio",
+      "Combo Facturación + Nómina Electrónica",
+      "Combo Facturación + Nómina + POS"
+    ];
+
+    // autocomplete elements
+    const productoInput = document.getElementById("producto_search");
+    const suggestionsBox = document.getElementById("suggestions");
+    const hiddenProducto = document.getElementById("producto");
+
+    let selectedIndex = -1;
+    let currentSuggestions = [];
+
+    function showSuggestions(list) {
+      suggestionsBox.innerHTML = "";
+      if (!list.length) { suggestionsBox.style.display = "none"; return; }
+      list.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.textContent = item;
+        div.className = "suggestion-item";
+        div.dataset.value = item;
+        div.addEventListener("click", () => {
+          selectProduct(item);
+        });
+        suggestionsBox.appendChild(div);
+      });
+      suggestionsBox.style.display = "block";
+    }
+
+    function filterProducts(query) {
+      if (!query) return PRODUCTS.slice();
+      const q = query.trim().toLowerCase();
+      return PRODUCTS.filter(p => p.toLowerCase().includes(q));
+    }
+
+    function selectProduct(value) {
+      productoInput.value = value;
+      hiddenProducto.value = value;
+      suggestionsBox.style.display = "none";
+      selectedIndex = -1;
+      currentSuggestions = [];
+    }
+
+    productoInput.addEventListener("input", (e) => {
+      const val = e.target.value;
+      const list = filterProducts(val);
+      currentSuggestions = list;
+      selectedIndex = -1;
+      showSuggestions(list);
+      // clear hidden if input doesn't match exactly
+      if (PRODUCTS.indexOf(val) === -1) hiddenProducto.value = "";
+      else hiddenProducto.value = val;
+    });
+
+    productoInput.addEventListener("keydown", (e) => {
+      if (suggestionsBox.style.display === "none") return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, currentSuggestions.length - 1);
+        highlightSuggestion();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        highlightSuggestion();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectedIndex >= 0 && currentSuggestions[selectedIndex]) {
+          selectProduct(currentSuggestions[selectedIndex]);
+        } else {
+          if (PRODUCTS.indexOf(productoInput.value) !== -1) {
+            hiddenProducto.value = productoInput.value;
+            suggestionsBox.style.display = "none";
+          }
+        }
+      } else if (e.key === "Escape") {
+        suggestionsBox.style.display = "none";
+      }
+    });
+
+    function highlightSuggestion() {
+      const items = suggestionsBox.querySelectorAll(".suggestion-item");
+      items.forEach((it, i) => {
+        it.classList.toggle("active", i === selectedIndex);
+      });
+      if (selectedIndex >= 0) {
+        const active = items[selectedIndex];
+        if (active) active.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    // click outside closes suggestions
+    document.addEventListener("click", (e) => {
+      if (!document.querySelector(".autocomplete-wrap").contains(e.target)) {
+        suggestionsBox.style.display = "none";
+      }
+    });
+
+    // FIRESTORE sync and UI logic
     let historicoClientes = [];
     let clientesMostrados = 10;
 
@@ -171,12 +261,21 @@
     };
 
     window.guardarInformacion = async function() {
+      // validate product selected
+      const productoVal = hiddenProducto.value;
+      if (!productoVal) {
+        alert("❗ Debes seleccionar un producto válido de la lista antes de guardar.");
+        productoInput.focus();
+        return;
+      }
+
       const cedula = document.getElementById("cedula_vendedor").value;
       const actividad = document.getElementById("actividad_empresa").value;
       const nombre = document.getElementById("nombre_contacto").value;
       const rol = document.getElementById("rol_contacto").value;
+      const contabilidad = document.getElementById("contabilidad").value;
       const necesidad = document.getElementById("necesidad").value.toLowerCase();
-      const producto = document.getElementById("producto").value;
+      const producto = productoVal;
       const decision = document.getElementById("decision_compra").value;
       const referidos = document.getElementById("referidos").value;
       const observaciones = document.getElementById("observaciones").value;
@@ -203,6 +302,9 @@
 
       try {
         await addDoc(collection(db, "clientes"), registro);
+        // reset product hidden to require new valid selection on next entry
+        hiddenProducto.value = "";
+        productoInput.value = "";
         alert("✅ Información guardada correctamente en la nube");
       } catch (err) {
         alert("❌ Error al guardar: " + err.message);
