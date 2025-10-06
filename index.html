@@ -53,7 +53,34 @@
       <textarea id="necesidad"></textarea>
 
       <label>Producto cotizado:</label>
-      <input type="text" id="producto">
+      <select id="producto" required>
+        <option value="">Selecciona un producto</option>
+        <option value="Facturación Electrónica 24">Facturación Electrónica 24 Docs</option>
+        <option value="Facturación Electrónica 120">Facturación Electrónica 120 Docs</option>
+        <option value="Facturación Electrónica PRO">Facturación Electrónica PRO (500 Docs)</option>
+        <option value="Facturación Electrónica 1500">Facturación Electrónica 1500 Docs</option>
+        <option value="Facturación Electrónica + WhatsApp 24">Combo FE + WhatsApp 24</option>
+        <option value="Facturación Electrónica + WhatsApp 120">Combo FE + WhatsApp 120</option>
+        <option value="Nómina Electrónica 24">Nómina Electrónica 24</option>
+        <option value="Nómina Electrónica 120">Nómina Electrónica 120</option>
+        <option value="Nómina Electrónica 300">Nómina Electrónica 300</option>
+        <option value="POS Esencial">POS Web Esencial</option>
+        <option value="POS Inicio">POS Web Inicio</option>
+        <option value="Nómina + POS Esencial">Nómina + POS Esencial</option>
+        <option value="Nómina + POS Inicio">Nómina + POS Inicio</option>
+        <option value="FE + NE Combo">Combo Facturación + Nómina Electrónica</option>
+        <option value="FE + NE + POS">Combo Facturación + Nómina + POS</option>
+        <option value="Software Médico">Software Médico</option>
+        <option value="SaludTools">SaludTools</option>
+        <option value="Dentalink">Dentalink</option>
+        <option value="GoClinic">GoClinic</option>
+        <option value="Rindegastos">Rindegastos</option>
+        <option value="Te Auditamos">Te Auditamos</option>
+        <option value="Thot Strategy">Thot Strategy</option>
+        <option value="Mercado Pago">Mercado Pago</option>
+        <option value="EPSON POS">EPSON POS</option>
+        <option value="SAT Store">SAT Store</option>
+      </select>
 
       <label>¿De qué depende la compra?</label>
       <textarea id="decision_compra"></textarea>
@@ -119,9 +146,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     let historicoClientes = [];
-    let clientesMostrados = 10; // límite inicial
+    let clientesMostrados = 10;
 
-    // Escucha en tiempo real
     onSnapshot(collection(db, "clientes"), (snapshot) => {
       historicoClientes = [];
       snapshot.forEach(docSnap => {
@@ -133,7 +159,6 @@
       revisarSeguimientos();
     });
 
-    // Guardar cédula
     window.onload = function() {
       let cedulaGuardada = localStorage.getItem("cedulaVendedor");
       if (cedulaGuardada) document.getElementById("cedula_vendedor").value = cedulaGuardada;
@@ -142,16 +167,14 @@
     window.guardarCedula = function() {
       let cedula = document.getElementById("cedula_vendedor").value;
       localStorage.setItem("cedulaVendedor", cedula);
-      aplicarFiltroInicial(); // actualizar automáticamente el filtro
+      aplicarFiltroInicial();
     };
 
-    // Guardar información
     window.guardarInformacion = async function() {
       const cedula = document.getElementById("cedula_vendedor").value;
       const actividad = document.getElementById("actividad_empresa").value;
       const nombre = document.getElementById("nombre_contacto").value;
       const rol = document.getElementById("rol_contacto").value;
-      const contabilidad = document.getElementById("contabilidad").value;
       const necesidad = document.getElementById("necesidad").value.toLowerCase();
       const producto = document.getElementById("producto").value;
       const decision = document.getElementById("decision_compra").value;
@@ -186,7 +209,6 @@
       }
     };
 
-    // Mostrar tabla con paginación
     function mostrarTabla(datos) {
       const tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
       tabla.innerHTML = "";
@@ -232,7 +254,6 @@
       filtrarPorCedula();
     };
 
-    // Filtro automático por cédula guardada
     function aplicarFiltroInicial() {
       const cedulaGuardada = localStorage.getItem("cedulaVendedor");
       if (cedulaGuardada) {
@@ -243,7 +264,6 @@
       }
     }
 
-    // Filtro manual
     window.filtrarPorCedula = function() {
       const filtro = document.getElementById("buscarCedula").value.trim();
       clientesMostrados = 10;
@@ -255,14 +275,12 @@
       }
     };
 
-    // Limpiar filtro
     window.limpiarFiltro = function() {
       document.getElementById("buscarCedula").value = "";
       clientesMostrados = 10;
       mostrarTabla(historicoClientes);
     };
 
-    // Revisar seguimientos
     function revisarSeguimientos() {
       const hoy = new Date().toISOString().split("T")[0];
       historicoClientes.forEach(c => {
@@ -272,7 +290,6 @@
       });
     }
 
-    // Exportar a Excel
     window.exportarExcel = function() {
       const ws = XLSX.utils.json_to_sheet(historicoClientes);
       const wb = XLSX.utils.book_new();
