@@ -20,6 +20,7 @@
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
     th { background: #0056b3; color: #fff; }
     tr:nth-child(even) { background: #f9f9f9; }
+    .filtro { margin-top: 20px; padding: 10px; background: #eef3fa; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -64,7 +65,12 @@
       <button type="button" onclick="guardarInformacion()">Guardar Información</button>
     </form>
 
-    <h3 style="margin-top:40px;">📊 Histórico de Clientes</h3>
+    <div class="filtro">
+      <label>🔍 Buscar por cédula de vendedor:</label>
+      <input type="text" id="buscarCedula" placeholder="Escribe la cédula del vendedor..." oninput="filtrarPorCedula()">
+    </div>
+
+    <h3 style="margin-top:20px;">📊 Histórico de Clientes</h3>
     <table id="tablaClientes">
       <thead>
         <tr>
@@ -115,7 +121,7 @@
         data.id = docSnap.id;
         historicoClientes.push(data);
       });
-      mostrarTabla();
+      mostrarTabla(historicoClientes);
       revisarSeguimientos();
     });
 
@@ -171,11 +177,11 @@
       }
     };
 
-    // Mostrar tabla con lista desplegable de estado
-    function mostrarTabla() {
+    // Mostrar tabla
+    function mostrarTabla(datos) {
       const tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
       tabla.innerHTML = "";
-      historicoClientes.forEach((r) => {
+      datos.forEach((r) => {
         const fila = tabla.insertRow();
         fila.insertCell(0).innerText = r.Cedula;
         fila.insertCell(1).innerText = r.Nombre;
@@ -205,6 +211,17 @@
         celdaEstado.appendChild(selectEstado);
       });
     }
+
+    // Filtro por cédula
+    window.filtrarPorCedula = function() {
+      const filtro = document.getElementById("buscarCedula").value.trim();
+      if (filtro === "") {
+        mostrarTabla(historicoClientes);
+      } else {
+        const filtrados = historicoClientes.filter(c => c.Cedula && c.Cedula.includes(filtro));
+        mostrarTabla(filtrados);
+      }
+    };
 
     // Revisar seguimientos
     function revisarSeguimientos() {
