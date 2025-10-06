@@ -11,21 +11,11 @@
     .container { max-width: 1000px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1);}
     h2 { text-align: center; color: #0056b3; margin-bottom: 20px;}
     label { font-weight: bold; display: block; margin-top: 15px; color: #333;}
-    input, textarea { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;}
+    input, textarea, select { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px;}
     textarea { resize: vertical; min-height: 80px;}
     button { margin-top: 10px; padding: 8px 12px; border: none; border-radius: 6px; background: #0056b3; color: white; font-size: 14px; cursor: pointer;}
     button:hover { background: #00408f;}
-    .resultado { margin-top: 30px; padding: 20px; background: #f0f4f9; border-radius: 8px; border: 1px solid #ccc;}
     .footer { text-align: center; margin-top: 25px; font-size: 12px; color: #666;}
-    pre { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; overflow-x: auto; }
-    .copy-btn { background: #28a745; }
-    .excel-btn { background: #ff9800; }
-    .clear-btn { background: #dc3545; }
-    .done-btn { background: #28a745; }
-    .copy-btn:hover { background: #1e7e34; }
-    .excel-btn:hover { background: #e68900; }
-    .clear-btn:hover { background: #a71d2a; }
-    .done-btn:hover { background: #1c7c31; }
     table { width: 100%; border-collapse: collapse; margin-top: 25px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 13px; }
     th { background: #0056b3; color: #fff; }
@@ -93,8 +83,7 @@
       <tbody></tbody>
     </table>
 
-    <button class="excel-btn" onclick="exportarExcel()">📥 Exportar a Excel</button>
-    <button class="clear-btn" onclick="limpiarHistorico()">🗑️ Limpiar Histórico</button>
+    <button onclick="exportarExcel()">📥 Exportar a Excel</button>
 
     <div class="footer">Creado para uso de Ejecutivos de Ventas - SIIGO</div>
   </div>
@@ -116,10 +105,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
     let historicoClientes = [];
 
-    // 🔹 Escucha en tiempo real de Firestore
+    // Escucha en tiempo real
     onSnapshot(collection(db, "clientes"), (snapshot) => {
       historicoClientes = [];
       snapshot.forEach(docSnap => {
@@ -131,7 +119,7 @@
       revisarSeguimientos();
     });
 
-    // 🔹 Guardar cedula localmente
+    // Guardar cédula
     window.onload = function() {
       let cedulaGuardada = localStorage.getItem("cedulaVendedor");
       if (cedulaGuardada) document.getElementById("cedula_vendedor").value = cedulaGuardada;
@@ -142,7 +130,7 @@
       localStorage.setItem("cedulaVendedor", cedula);
     };
 
-    // 🔹 Guardar información en Firestore
+    // Guardar información
     window.guardarInformacion = async function() {
       const cedula = document.getElementById("cedula_vendedor").value;
       const actividad = document.getElementById("actividad_empresa").value;
@@ -160,7 +148,7 @@
       let recomendacion = "SIIGO Pyme/Emprendedor";
       if (necesidad.includes("nómina") || necesidad.includes("empleados")) recomendacion = "SIIGO Nómina";
       else if (rol.toLowerCase().includes("contador")) recomendacion = "SIIGO Contador";
-      else if (necesidad.includes("todo") || necesidad.includes("integral") || necesidad.includes("erp") || necesidad.includes("inventario")) recomendacion = "SIIGO Integral (ERP)";
+      else if (necesidad.includes("erp") || necesidad.includes("inventario")) recomendacion = "SIIGO ERP Integral";
 
       const registro = {
         Cedula: cedula,
@@ -183,7 +171,7 @@
       }
     };
 
-    // 🔹 Mostrar tabla
+    // Mostrar tabla con lista desplegable de estado
     function mostrarTabla() {
       const tabla = document.getElementById("tablaClientes").getElementsByTagName('tbody')[0];
       tabla.innerHTML = "";
@@ -198,22 +186,27 @@
         fila.insertCell(6).innerText = r.Recomendacion;
         fila.insertCell(7).innerText = r.FechaGuardado;
         fila.insertCell(8).innerText = r.FechaSeguimiento;
+
         const celdaEstado = fila.insertCell(9);
-        if (r.Estado === "Pendiente" && r.FechaSeguimiento) {
-          const btn = document.createElement("button");
-          btn.innerText = "✅ Confirmar";
-          btn.classList.add("done-btn");
-          btn.onclick = async () => {
-            await updateDoc(doc(db, "clientes", r.id), { Estado: "Hecho" });
-          };
-          celdaEstado.appendChild(btn);
-        } else {
-          celdaEstado.innerText = "✔ Hecho";
-        }
+        const selectEstado = document.createElement("select");
+        const opciones = ["Pendiente", "Seguimiento", "Venta", "No acepta Venta"];
+        opciones.forEach(op => {
+          const option = document.createElement("option");
+          option.value = op;
+          option.textContent = op;
+          if (r.Estado === op) option.selected = true;
+          selectEstado.appendChild(option);
+        });
+        selectEstado.addEventListener("change", async () => {
+          const nuevoEstado = selectEstado.value;
+          await updateDoc(doc(db, "clientes", r.id), { Estado: nuevoEstado });
+          alert(`✅ Estado actualizado a: ${nuevoEstado} para ${r.Nombre}`);
+        });
+        celdaEstado.appendChild(selectEstado);
       });
     }
 
-    // 🔹 Revisar seguimientos vencidos
+    // Revisar seguimientos
     function revisarSeguimientos() {
       const hoy = new Date().toISOString().split("T")[0];
       historicoClientes.forEach(c => {
@@ -223,17 +216,12 @@
       });
     }
 
-    // 🔹 Exportar a Excel
+    // Exportar a Excel
     window.exportarExcel = function() {
       const ws = XLSX.utils.json_to_sheet(historicoClientes);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Clientes");
       XLSX.writeFile(wb, "Historico_Clientes_SIIGO.xlsx");
-    };
-
-    // 🔹 Limpiar tabla local
-    window.limpiarHistorico = function() {
-      alert("Los datos están en la nube y no se eliminan aquí.");
     };
   </script>
 </body>
